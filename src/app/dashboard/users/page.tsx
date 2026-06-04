@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,7 +142,14 @@ function UserRow({
 }) {
   return (
     <tr className="border-b last:border-0">
-      <td className="px-4 py-3 font-medium">{user.name}</td>
+      <td className="px-4 py-3 font-medium">
+        <Link
+          href={`/dashboard/users/${user.id}`}
+          className="text-blue-600 hover:underline"
+        >
+          {user.name}
+        </Link>
+      </td>
       <td className="px-4 py-3 text-gray-500">{user.email}</td>
       <td className="px-4 py-3">
         <Badge variant={user.role === "管理员" ? "default" : "secondary"}>
