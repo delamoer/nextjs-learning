@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useUsers, useDeleteUser } from "@/hooks/use-users";
 import { UserFormDialog } from "@/components/user-form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Can } from "@/components/permission";
 import type { User } from "@/lib/api";
 
 export default function UsersPage() {
@@ -44,7 +45,9 @@ export default function UsersPage() {
             共 {data?.total ?? 0} 个用户
           </p>
         </div>
-        <UserFormDialog />
+        <Can permission="user:create">
+          <UserFormDialog />
+        </Can>
       </div>
 
       {/* 搜索栏 */}
@@ -162,27 +165,29 @@ function UserRow({
       <td className="px-4 py-3 text-gray-500">{user.createdAt}</td>
       <td className="px-4 py-3">
         <div className="flex gap-1">
-          {/* 编辑：复用 UserFormDialog，传 editUser */}
-          <UserFormDialog
-            editUser={user}
-            trigger={
-              <span className="cursor-pointer text-blue-500 hover:text-blue-700 text-xs">
-                编辑
-              </span>
-            }
-          />
-          {/* 删除：带确认弹窗 */}
-          <ConfirmDialog
-            trigger={
-              <span className="cursor-pointer text-red-500 hover:text-red-700 text-xs ml-2">
-                删除
-              </span>
-            }
-            title="删除用户"
-            description={`确定要删除用户「${user.name}」吗？此操作不可撤销。`}
-            onConfirm={onDelete}
-            loading={deleteLoading}
-          />
+          <Can permission="user:edit">
+            <UserFormDialog
+              editUser={user}
+              trigger={
+                <span className="cursor-pointer text-blue-500 hover:text-blue-700 text-xs">
+                  编辑
+                </span>
+              }
+            />
+          </Can>
+          <Can permission="user:delete">
+            <ConfirmDialog
+              trigger={
+                <span className="cursor-pointer text-red-500 hover:text-red-700 text-xs ml-2">
+                  删除
+                </span>
+              }
+              title="删除用户"
+              description={`确定要删除用户「${user.name}」吗？此操作不可撤销。`}
+              onConfirm={onDelete}
+              loading={deleteLoading}
+            />
+          </Can>
         </div>
       </td>
     </tr>

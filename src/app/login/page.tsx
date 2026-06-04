@@ -79,9 +79,10 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
-          <p className="font-medium mb-1">测试账号：</p>
-          <p>管理员：admin@example.com / 123456</p>
-          <p>用户：user@example.com / 123456</p>
+          <p className="font-medium mb-1">测试账号（密码都是 123456）：</p>
+          <p>管理员：admin@example.com（全部权限）</p>
+          <p>编辑员：editor@example.com（可增改，不可删）</p>
+          <p>普通用户：user@example.com（只能看）</p>
         </div>
       </div>
     </div>

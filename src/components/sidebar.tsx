@@ -5,17 +5,20 @@ import { usePathname, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { hasPermission, getRoleName, type Permission } from "@/lib/auth";
 
 interface NavItem {
   href: string;
   label: string;
   icon: string;
+  permission?: Permission; // 需要什么权限才显示
 }
 
+// 菜单配置：设置页需要 settings:read 权限
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "仪表盘", icon: "📊" },
-  { href: "/dashboard/users", label: "用户管理", icon: "👥" },
-  { href: "/dashboard/settings", label: "系统设置", icon: "⚙️" },
+  { href: "/dashboard/users", label: "用户管理", icon: "👥", permission: "user:read" },
+  { href: "/dashboard/settings", label: "系统设置", icon: "⚙️", permission: "settings:read" },
 ];
 
 export function Sidebar() {
@@ -28,6 +31,13 @@ export function Sidebar() {
     router.push("/login");
   };
 
+  // 根据权限过滤菜单
+  const visibleItems = navItems.filter((item) => {
+    if (!item.permission) return true;
+    if (!user) return false;
+    return hasPermission(user.role, item.permission);
+  });
+
   return (
     <aside className="flex w-60 flex-col border-r bg-white">
       <div className="p-6">
@@ -37,7 +47,7 @@ export function Sidebar() {
       <Separator />
 
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -56,7 +66,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* 底部用户信息 + 登出 */}
       <div className="border-t p-4">
         {user && (
           <div className="mb-3 flex items-center gap-3">
@@ -65,7 +74,7 @@ export function Sidebar() {
             </div>
             <div className="text-sm">
               <p className="font-medium">{user.name}</p>
-              <p className="text-xs text-gray-400">{user.role}</p>
+              <p className="text-xs text-gray-400">{getRoleName(user.role)}</p>
             </div>
           </div>
         )}
