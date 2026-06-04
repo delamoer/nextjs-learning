@@ -1,28 +1,31 @@
-// 用户管理页面
-// 改成 'use client' 因为要用 TanStack Query 的 Hook
+// 用户管理页面：分页 + 搜索 + CRUD 完整功能
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useUsers, useDeleteUser } from "@/hooks/use-users";
 import { UserFormDialog } from "@/components/user-form-dialog";
-import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import type { User } from "@/lib/api";
 
 export default function UsersPage() {
-  // useQuery 返回的对象：自动管理 loading / error / data
-  // 你之前用 useEffect + useState 手动管的那些，这一行全搞定
-  const { data: users, isLoading, error } = useUsers();
+  // 分页和搜索状态
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const pageSize = 5;
+
+  // queryKey 包含 page 和 search → 变了就重新请求
+  const { data, isLoading, error } = useUsers({ page, pageSize, search });
   const deleteUser = useDeleteUser();
 
-  // 加载中
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-gray-400">加载中...</p>
-      </div>
-    );
-  }
+  // 搜索时重置到第一页
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
-  // 请求出错
   if (error) {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -33,75 +36,155 @@ export default function UsersPage() {
 
   return (
     <div>
+      {/* 顶部：标题 + 搜索 + 新增 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">用户管理</h1>
           <p className="mt-1 text-sm text-gray-500">
-            共 {users?.length ?? 0} 个用户
+            共 {data?.total ?? 0} 个用户
           </p>
         </div>
         <UserFormDialog />
       </div>
 
-      <div className="mt-6 rounded-lg border bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-gray-50 text-left">
-              <th className="px-4 py-3 font-medium">姓名</th>
-              <th className="px-4 py-3 font-medium">邮箱</th>
-              <th className="px-4 py-3 font-medium">角色</th>
-              <th className="px-4 py-3 font-medium">状态</th>
-              <th className="px-4 py-3 font-medium">注册时间</th>
-              <th className="px-4 py-3 font-medium">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users?.map((user) => (
-              <tr key={user.id} className="border-b last:border-0">
-                <td className="px-4 py-3 font-medium">{user.name}</td>
-                <td className="px-4 py-3 text-gray-500">{user.email}</td>
-                <td className="px-4 py-3">
-                  <Badge
-                    variant={user.role === "管理员" ? "default" : "secondary"}
-                  >
-                    {user.role}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs ${
-                      user.status === "active"
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        user.status === "active"
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                      }`}
-                    />
-                    {user.status === "active" ? "活跃" : "停用"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-500">{user.createdAt}</td>
-                <td className="px-4 py-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => deleteUser.mutate(user.id)}
-                    disabled={deleteUser.isPending}
-                  >
-                    删除
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* 搜索栏 */}
+      <div className="mt-4">
+        <Input
+          placeholder="搜索姓名或邮箱..."
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="max-w-sm"
+        />
       </div>
+
+      {/* 表格 */}
+      <div className="mt-4 rounded-lg border bg-white">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <p className="text-gray-400">加载中...</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-gray-50 text-left">
+                <th className="px-4 py-3 font-medium">姓名</th>
+                <th className="px-4 py-3 font-medium">邮箱</th>
+                <th className="px-4 py-3 font-medium">角色</th>
+                <th className="px-4 py-3 font-medium">状态</th>
+                <th className="px-4 py-3 font-medium">注册时间</th>
+                <th className="px-4 py-3 font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.data.map((user) => (
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  onDelete={() => deleteUser.mutate(user.id)}
+                  deleteLoading={deleteUser.isPending}
+                />
+              ))}
+              {data?.data.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                    {search ? "没有找到匹配的用户" : "暂无用户"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* 分页 */}
+      {data && data.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            第 {data.page} / {data.totalPages} 页
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page <= 1}
+            >
+              上一页
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= data.totalPages}
+            >
+              下一页
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// 表格行组件（抽出来让代码更清晰）
+function UserRow({
+  user,
+  onDelete,
+  deleteLoading,
+}: {
+  user: User;
+  onDelete: () => void;
+  deleteLoading: boolean;
+}) {
+  return (
+    <tr className="border-b last:border-0">
+      <td className="px-4 py-3 font-medium">{user.name}</td>
+      <td className="px-4 py-3 text-gray-500">{user.email}</td>
+      <td className="px-4 py-3">
+        <Badge variant={user.role === "管理员" ? "default" : "secondary"}>
+          {user.role}
+        </Badge>
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex items-center gap-1 text-xs ${
+            user.status === "active" ? "text-green-600" : "text-gray-400"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              user.status === "active" ? "bg-green-500" : "bg-gray-300"
+            }`}
+          />
+          {user.status === "active" ? "活跃" : "停用"}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-gray-500">{user.createdAt}</td>
+      <td className="px-4 py-3">
+        <div className="flex gap-1">
+          {/* 编辑：复用 UserFormDialog，传 editUser */}
+          <UserFormDialog
+            editUser={user}
+            trigger={
+              <span className="cursor-pointer text-blue-500 hover:text-blue-700 text-xs">
+                编辑
+              </span>
+            }
+          />
+          {/* 删除：带确认弹窗 */}
+          <ConfirmDialog
+            trigger={
+              <span className="cursor-pointer text-red-500 hover:text-red-700 text-xs ml-2">
+                删除
+              </span>
+            }
+            title="删除用户"
+            description={`确定要删除用户「${user.name}」吗？此操作不可撤销。`}
+            onConfirm={onDelete}
+            loading={deleteLoading}
+          />
+        </div>
+      </td>
+    </tr>
   );
 }
