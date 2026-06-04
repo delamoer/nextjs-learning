@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { Can } from "@/components/permission";
+import { AvatarUpload } from "@/components/avatar-upload";
 
 // ===== 个人信息表单 =====
 const profileSchema = z.object({
@@ -39,7 +40,13 @@ function ProfileTab() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md space-y-6">
+      {/* 头像上传 */}
+      <div className="space-y-2">
+        <Label>头像</Label>
+        <AvatarUpload onUpload={(url) => console.log("头像已上传:", url)} />
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="name">姓名</Label>
         <Input id="name" {...register("name")} />

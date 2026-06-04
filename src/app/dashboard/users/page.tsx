@@ -1,8 +1,8 @@
 // 用户管理页面：分页 + 搜索 + CRUD 完整功能
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,19 +15,37 @@ import { fetchUsers } from "@/lib/api";
 import type { User } from "@/lib/api";
 
 export default function UsersPage() {
-  // 分页和搜索状态
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  // URL 状态同步：搜索和分页参数存在 URL 里
+  // 好处：用户刷新不丢失、可以分享链接、浏览器前进后退有效
+  // 类比 Vue Router：this.$route.query.page
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // 从 URL 读取参数（默认值处理）
+  const page = Number(searchParams.get("page")) || 1;
+  const search = searchParams.get("search") || "";
   const pageSize = 5;
 
-  // queryKey 包含 page 和 search → 变了就重新请求
+  // 更新 URL 参数的工具函数
+  const updateParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const { data, isLoading, error } = useUsers({ page, pageSize, search });
   const deleteUser = useDeleteUser();
 
   // 搜索时重置到第一页
   const handleSearch = (value: string) => {
-    setSearch(value);
-    setPage(1);
+    updateParams({ search: value || null, page: null });
   };
 
   // 导出全部用户（不分页）
@@ -124,7 +142,7 @@ export default function UsersPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => updateParams({ page: String(page - 1) })}
               disabled={page <= 1}
             >
               上一页
@@ -132,7 +150,7 @@ export default function UsersPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => updateParams({ page: String(page + 1) })}
               disabled={page >= data.totalPages}
             >
               下一页
