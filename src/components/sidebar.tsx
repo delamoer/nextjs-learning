@@ -39,7 +39,7 @@ export function Sidebar() {
   });
 
   return (
-    <aside className="flex w-60 flex-col border-r bg-white">
+    <aside className="flex w-60 flex-col border-r bg-white dark:border-gray-800 dark:bg-gray-900">
       <div className="p-6">
         <h2 className="text-lg font-bold text-gray-900">管理后台</h2>
       </div>

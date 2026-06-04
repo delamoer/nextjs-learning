@@ -1,9 +1,7 @@
-// dashboard/layout.tsx —— 仪表盘的嵌套布局
-// AuthGuard 包裹：未登录会自动跳转到 /login
-// 只有 /dashboard 及其子路由需要登录保护
-
 import { Sidebar } from "@/components/sidebar";
 import { AuthGuard } from "@/components/auth-guard";
+import { NotificationBell } from "@/components/notification-bell";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DashboardLayout({
   children,
@@ -14,9 +12,17 @@ export default function DashboardLayout({
     <AuthGuard>
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1 p-8">
-          {children}
-        </main>
+        <div className="flex flex-1 flex-col">
+          {/* 顶部栏 */}
+          <header className="flex items-center justify-end gap-2 border-b bg-white px-8 py-3 dark:border-gray-800 dark:bg-gray-900">
+            <ThemeToggle />
+            <NotificationBell />
+          </header>
+          {/* 主内容区 */}
+          <main className="flex-1 p-8">
+            {children}
+          </main>
+        </div>
       </div>
     </AuthGuard>
   );

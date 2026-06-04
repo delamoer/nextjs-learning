@@ -10,6 +10,8 @@ import { useUsers, useDeleteUser } from "@/hooks/use-users";
 import { UserFormDialog } from "@/components/user-form-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Can } from "@/components/permission";
+import { usersToCSV, downloadFile } from "@/lib/export";
+import { fetchUsers } from "@/lib/api";
 import type { User } from "@/lib/api";
 
 export default function UsersPage() {
@@ -26,6 +28,13 @@ export default function UsersPage() {
   const handleSearch = (value: string) => {
     setSearch(value);
     setPage(1);
+  };
+
+  // 导出全部用户（不分页）
+  const handleExport = async () => {
+    const result = await fetchUsers({ page: 1, pageSize: 9999 });
+    const csv = usersToCSV(result.data);
+    downloadFile(csv, `用户数据_${new Date().toLocaleDateString()}.csv`);
   };
 
   if (error) {
@@ -46,9 +55,14 @@ export default function UsersPage() {
             共 {data?.total ?? 0} 个用户
           </p>
         </div>
-        <Can permission="user:create">
-          <UserFormDialog />
-        </Can>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            导出 CSV
+          </Button>
+          <Can permission="user:create">
+            <UserFormDialog />
+          </Can>
+        </div>
       </div>
 
       {/* 搜索栏 */}

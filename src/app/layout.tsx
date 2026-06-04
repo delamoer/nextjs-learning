@@ -24,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode; // TypeScript：children 的类型是 React 节点
 }) {
   return (
-    <html lang="zh-CN" className={cn("font-sans", geist.variable)}>
-      <body className="min-h-screen bg-gray-50">
+    <html lang="zh-CN" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:text-gray-100">
         <Providers>{children}</Providers>
       </body>
     </html>
